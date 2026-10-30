@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project Specific
+data/*.csv
+data/raw/*.csv
+!data/raw/sample_transactions.csv
+data/processed/*.csv
+*.joblib
+*.pkl
+.DS_Store
