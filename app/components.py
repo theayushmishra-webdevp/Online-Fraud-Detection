@@ -1,91 +1,108 @@
 """
-Reusable UI Components for the Online Fraud Detection Streamlit Dashboard.
+Reusable UI Components for the Online Fraud Detection Fintech Platform.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import streamlit as st
 
-def render_hero_banner():
-    """Renders the top executive banner for the application."""
-    st.markdown(
-        """
-        <div class="hero-banner">
-            <span class="badge">SECURE BANKING AI &bull; ENTERPRISE ML</span>
-            <h1>Online Fraud Detection Platform</h1>
-            <p>
-                An intelligent financial risk surveillance system powered by <strong>Random Forest</strong> and 
-                <strong>XGBoost</strong> algorithms. Detects account drain vectors, unauthorized transfers, 
-                and synthetic identity mules in real-time with extreme class imbalance compensation.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
-def render_kpi_card(title: str, value: str, subtitle: str = "", delta: str = None):
-    """Renders a styled KPI card."""
-    delta_html = f"<div style='color: #2D6A4F; font-size: 0.8rem; font-weight: 600; margin-top: 4px;'>{delta}</div>" if delta else ""
+def render_header(
+    title: str = "Fraud Intelligence Dashboard",
+    subtitle: str = "Monitor financial transactions and identify suspicious activity using machine learning.",
+    badge: str = "FINTECH RISK INTELLIGENCE &bull; ENTERPRISE ML",
+):
+    """Renders the top executive fintech banner."""
     st.markdown(
         f"""
-        <div class="metric-card">
-            <div class="title">{title}</div>
-            <div class="value">{value}</div>
-            <div class="subtitle">{subtitle}</div>
-            {delta_html}
+        <div class="fintech-header">
+            <span class="pill-badge">{badge}</span>
+            <h1>{title}</h1>
+            <p>{subtitle}</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-def render_risk_verdict_card(result: Dict[str, Any]):
+
+def render_kpi_card(
+    title: str,
+    value: str,
+    subtitle: str = "",
+    highlight: str = "",  # "fraud", "legit", "navy", or ""
+):
+    """Renders a styled fintech KPI card with clean typography."""
+    highlight_class = f"{highlight}-highlight" if highlight else ""
+    st.markdown(
+        f"""
+        <div class="kpi-card {highlight_class}">
+            <div class="card-title">{title}</div>
+            <div class="card-value">{value}</div>
+            <div class="card-subtitle">{subtitle}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_risk_verdict_card(result: Dict[str, Any], txn_id: Optional[str] = None):
     """Renders the single-transaction classification verdict card."""
     is_fraud = result["prediction"] == 1
-    tier = result["risk_tier"]
-    color = result["risk_color"]
-    prob = result["confidence_pct"]
-    label = result["label"]
-    action = result["recommended_action"]
-    model_name = result.get("model_used", "Model")
+    tier = result.get("risk_tier", "Low")
+    color = "#C94C4C" if is_fraud else "#3D8062"
+    prob_pct = result.get("confidence_pct", float(result.get("fraud_probability", 0)) * 100)
+    prob_float = float(result.get("fraud_probability", 0))
+    action = result.get("recommended_action", "Auto-authorized.")
+    model_name = result.get("model_used", "Random Forest")
+    threshold = result.get("threshold", 0.50)
+    assigned_id = txn_id or result.get("txn_id", "TXN-DEMO-01")
 
-    box_class = "fraud-alert-box" if is_fraud else "legit-alert-box"
+    box_class = "fraud-verdict-box" if is_fraud else "legit-verdict-box"
     badge_class = "badge-fraud" if is_fraud else "badge-legit"
-    title_icon = "🚨 FRAUD DETECTED" if is_fraud else "✅ TRANSACTION VERIFIED"
+    title_icon = "🚨 FRAUDULENT TRANSACTION DETECTED" if is_fraud else "✅ LEGITIMATE TRANSACTION VERIFIED"
+    badge_label = "SUSPICIOUS FRAUD" if is_fraud else "LEGITIMATE"
 
     st.markdown(
         f"""
         <div class="{box_class}">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span class="{badge_class}">{label}</span>
-                <span style="font-weight: 700; color: {color}; font-size: 1.1rem; font-family: 'Space Grotesk', sans-serif;">
-                    Risk Tier: {tier.upper()}
-                </span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <span class="{badge_class}">{badge_label}</span>
+                    <span class="monospace-id" style="margin-left: 8px;">{assigned_id}</span>
+                </div>
+                <div style="font-weight: 700; color: {color}; font-size: 1.05rem;">
+                    RISK TIER: {tier.upper()}
+                </div>
             </div>
-            <h2 style="margin: 0 0 8px 0; font-size: 1.6rem; color: #16261E;">{title_icon}</h2>
-            <p style="font-size: 0.95rem; color: #405349; margin-bottom: 16px;">
-                Model: <strong>{model_name}</strong> &bull; Fraud Probability Score: <strong>{prob:.2f}%</strong>
-            </p>
-            <div style="background-color: #FFFFFF; border-radius: 8px; padding: 12px 16px; border: 1px solid #DDD4C5;">
-                <span style="font-size: 0.8rem; font-weight: 700; color: #1B4D3E; text-transform: uppercase;">Recommended Operator Action:</span>
-                <p style="margin: 4px 0 0 0; font-weight: 600; color: #123524; font-size: 0.95rem;">{action}</p>
+            <h2 style="margin: 4px 0 10px 0; font-size: 1.55rem; color: #1A3D2F;">{title_icon}</h2>
+            <div style="display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; font-size: 0.92rem; color: #77766F;">
+                <span>Scoring Engine: <strong style="color: #1B2B48;">{model_name}</strong></span>
+                <span>Decision Threshold: <strong style="color: #1B2B48;">{threshold:.2f}</strong></span>
+                <span>Fraud Probability Score: <strong style="color: {color};">{prob_pct:.2f}%</strong></span>
+            </div>
+            <div style="background-color: #FFFFFF; border-radius: 8px; padding: 14px 18px; border: 1px solid #E6E0D5;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: #1A3D2F; text-transform: uppercase; letter-spacing: 0.05em;">Recommended Operational Action:</span>
+                <p style="margin: 4px 0 0 0; font-weight: 600; color: #1B2B48; font-size: 0.95rem;">{action}</p>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # Risk Meter Progress Bar
-    st.markdown(f"**Fraud Probability Meter ({prob:.2f}%):**")
-    st.progress(float(result["fraud_probability"]))
+    # Risk Probability Meter
+    st.markdown(f"**Fraud Risk Score Meter ({prob_pct:.2f}%):**")
+    st.progress(min(max(prob_float, 0.0), 1.0))
 
-    # Render Detected Risk Indicators
+    # Risk Indicators
     indicators = result.get("risk_indicators", [])
     if indicators:
         st.markdown(
             """
-            <div class="cream-box" style="margin-top: 16px;">
-                <h4 style="margin-top: 0; color: #1B4D3E;">⚠️ Triggered Risk Signals</h4>
-                <ul style="margin-bottom: 0; padding-left: 20px; color: #16261E; font-size: 0.92rem;">
-            """ + "".join([f"<li style='margin-bottom: 6px;'>{ind}</li>" for ind in indicators]) + """
+            <div class="content-card" style="margin-top: 14px;">
+                <h4 style="margin-top: 0; color: #1A3D2F; font-size: 1.05rem;">⚠️ Triggered Risk Signals</h4>
+                <ul style="margin-bottom: 0; padding-left: 20px; color: #1A202C; font-size: 0.92rem; line-height: 1.6;">
+            """
+            + "".join([f"<li style='margin-bottom: 6px;'>{ind}</li>" for ind in indicators])
+            + """
                 </ul>
             </div>
             """,
@@ -94,11 +111,46 @@ def render_risk_verdict_card(result: Dict[str, Any]):
     else:
         st.markdown(
             """
-            <div class="cream-box" style="margin-top: 16px;">
-                <p style="margin: 0; color: #2D6A4F; font-weight: 600;">
-                    ✓ No suspicious balance anomalies, draining indicators, or transfer discrepancies detected.
+            <div class="content-card" style="margin-top: 14px;">
+                <p style="margin: 0; color: #3D8062; font-weight: 600; font-size: 0.92rem;">
+                    ✓ Normal baseline characteristics. No statistical anomaly signals triggered.
                 </p>
             </div>
             """,
             unsafe_allow_html=True,
         )
+
+    # Human in the loop disclaimer
+    render_compliance_disclaimer()
+
+
+def render_empty_state(
+    icon: str = "📋",
+    title: str = "No Transactions Recorded Yet",
+    message: str = "Analyze single transactions or run batch CSV files to view real-time audit records.",
+):
+    """Renders a clean, elegant empty state card."""
+    st.markdown(
+        f"""
+        <div class="empty-state-box">
+            <div class="icon">{icon}</div>
+            <h4>{title}</h4>
+            <p>{message}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_compliance_disclaimer():
+    """Renders standard operational compliance disclaimer."""
+    st.markdown(
+        """
+        <div class="compliance-notice">
+            <strong>Institutional Compliance Notice:</strong> This machine learning prediction represents a statistical 
+            decision-support risk score. In accordance with financial fraud prevention policies, high-risk scores 
+            should prompt secondary operational review and must not automatically be treated as definitive legal proof of fraud.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )

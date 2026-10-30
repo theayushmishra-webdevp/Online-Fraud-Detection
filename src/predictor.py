@@ -156,6 +156,7 @@ class FraudPredictor:
         self,
         transaction: Dict[str, Any],
         model_name: str = "xgboost",
+        threshold: float = 0.50,
     ) -> Dict[str, Any]:
         """
         Predict fraud risk for a single transaction dictionary.
@@ -166,6 +167,8 @@ class FraudPredictor:
             Dictionary containing transaction fields (step, type, amount, oldbalanceOrg, etc.)
         model_name : str
             'xgboost' or 'random_forest'
+        threshold : float
+            Decision threshold for classifying as fraud (default 0.50).
             
         Returns:
         --------
@@ -186,7 +189,7 @@ class FraudPredictor:
 
         # Predict probability of fraud (class 1)
         prob_fraud = float(model.predict_proba(X_trans)[0, 1])
-        prediction = int(prob_fraud >= 0.50)
+        prediction = int(prob_fraud >= threshold)
 
         tier, color, action = self._determine_risk_tier(prob_fraud)
         indicators = self._extract_risk_indicators(df.iloc[0])
@@ -201,12 +204,14 @@ class FraudPredictor:
             "recommended_action": action,
             "risk_indicators": indicators,
             "model_used": resolved_name,
+            "threshold": threshold,
         }
 
     def predict_batch(
         self,
         df: pd.DataFrame,
         model_name: str = "xgboost",
+        threshold: float = 0.50,
     ) -> pd.DataFrame:
         """
         Process and score a batch of transactions from a DataFrame or uploaded CSV.
@@ -217,6 +222,8 @@ class FraudPredictor:
             DataFrame containing transactions.
         model_name : str
             Model to use for scoring.
+        threshold : float
+            Decision threshold for classifying as fraud (default 0.50).
             
         Returns:
         --------
@@ -234,7 +241,7 @@ class FraudPredictor:
 
         X_trans = self._preprocessor.transform(X_raw)
         probs = model.predict_proba(X_trans)[:, 1]
-        preds = (probs >= 0.50).astype(int)
+        preds = (probs >= threshold).astype(int)
 
         df_out["fraud_probability"] = np.round(probs, 4)
         df_out["predicted_class"] = np.where(preds == 1, "FRAUD", "LEGITIMATE")
@@ -246,8 +253,10 @@ class FraudPredictor:
             tiers.append(tier)
         df_out["risk_tier"] = tiers
         df_out["model_used"] = resolved_name
+        df_out["threshold"] = threshold
 
         return df_out
+
 
 # Type alias helper for tuple
 Tuple_Tier = tuple[str, str, str]
